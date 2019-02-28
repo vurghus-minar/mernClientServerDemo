@@ -1,0 +1,40 @@
+{
+  "name": "mernclientserverdemo",
+  "version": "1.0.0",
+  "description": "Mongo Express React Node client server demo application",
+  "main": "server.js",
+  "scripts": {
+    "start": "cross-env NODE_ENV=prod node server.js",
+    "start:dev": "cross-env NODE_ENV=dev nodemon -L server.js",
+    "start:debug": "cross-env DEBUG=* NODE_ENV=dev nodemon --inspect server.js",
+    "test": "cross-env NODE_ENV=test nodemon --exec \"mocha --recursive -R min\"",
+    "test:debug": "cross-env DEBUG=* NODE_ENV=test nodemon --exec \"mocha --recursive -R min\""
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/vurghus-minar/mernClientServerDemo.git"
+  },
+  "author": "Vurghus Minar <vurghus.minar@outlook.com>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/vurghus-minar/mernClientServerDemo/issues"
+  },
+  "homepage": "https://github.com/vurghus-minar/mernClientServerDemo#readme",
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "body-parser": "^1.18.3",
+    "cross-env": "^5.2.0",
+    "debug": "^4.1.1",
+    "express": "^4.16.4",
+    "gravatar": "^1.8.0",
+    "joi": "^14.3.1",
+    "jsonwebtoken": "^8.5.0",
+    "mongoose": "^5.4.15",
+    "morgan": "^1.9.1",
+    "passport": "^0.4.0",
+    "passport-jwt": "^4.0.0",
+    "winston": "^3.2.1",
+    "winston-daily-rotate-file": "^3.8.0"
+  },
+  "devDependencies": {}
+}
