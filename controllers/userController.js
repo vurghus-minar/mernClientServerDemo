@@ -13,14 +13,6 @@ const jwt = require("jsonwebtoken");
 const config = require("../config");
 
 module.exports = {
-  profile(req, res, next) {
-    const user = req.user;
-    res.json({
-      name: user.name,
-      email: user.email,
-      avatar: user.avatar
-    });
-  },
   register(req, res, next) {
     registerUserSchema
       .validate(req.body, { abortEarly: false })
