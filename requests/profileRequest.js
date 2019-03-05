@@ -1,5 +1,7 @@
 const Joi = require("joi");
 
+const useridSchema = Joi.string();
+
 const handleSchema = Joi.string();
 const companySchema = Joi.string();
 const websiteSchema = Joi.string();
@@ -53,6 +55,7 @@ const educationSchema = Joi.object().keys({
   current: educationCurrentSchema,
   description: educationDescriptionSchema
 });
+exports.educationSchema = educationSchema;
 
 const experienceSchema = Joi.object().keys({
   title: experienceTitleSchema.required(),
@@ -63,6 +66,7 @@ const experienceSchema = Joi.object().keys({
   current: experienceCurrentSchema,
   description: experienceDescriptionSchema
 });
+exports.experienceSchema = experienceSchema;
 
 const socialSchema = Joi.object().keys({
   youtube: socialYoutubeSchema,
@@ -71,6 +75,7 @@ const socialSchema = Joi.object().keys({
   linkedin: socialLinkedinSchema,
   instagram: socialInstagramSchema
 });
+exports.socialSchema = socialSchema;
 
 //Profile Schemas
 
@@ -86,4 +91,12 @@ exports.profileSchema = Joi.object().keys({
   experience: Joi.array().items(experienceSchema),
   education: Joi.array().items(educationSchema),
   social: socialSchema
+});
+
+exports.profileHandleSchema = Joi.object().keys({
+  handle: handleSchema.required()
+});
+
+exports.profileUserIdSchema = Joi.object().keys({
+  user_id: useridSchema.required()
 });
