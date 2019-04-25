@@ -1,5 +1,6 @@
 const Profile = require("../models/profileModel");
 require("../models/userModel");
+const Err = require("../utils/error");
 const profileRequest = require("../requests/profileRequest");
 const profileSchema = profileRequest.profileSchema;
 const profileHandleSchema = profileRequest.profileHandleSchema;
@@ -11,18 +12,19 @@ module.exports = {
   index(req, res, next) {
     Profile.findOne({ user: req.user.id }, (err, profile) => {
       if (err) {
-        return res.status(500).json({
-          profile: "Error while querying user profile",
-          error: err
-        });
+        next(
+          Err("Error while querying user profile", 500, {
+            dbCallbackError: err
+          })
+        );
       }
       if (!profile) {
         return res.status(404).json({
-          profile: "No profile exists"
+          message: "No profile exists"
         });
       }
 
-      res.json(profile);
+      res.status(200).json(profile);
     });
   },
   getProfileByHandle(req, res, next) {
@@ -35,21 +37,26 @@ module.exports = {
           .then(profile => {
             if (!profile) {
               return res.status(404).json({
-                profile: "No profile exists"
+                message: "No profile exists"
               });
             }
-            res.json(profile);
+            res.status(200).json(profile);
           })
           .catch(err => {
-            return res.status(500).json({
-              handle: "Error fetching user profile",
-              error: err
-            });
+            next(
+              Err("Error while querying user profile by handle", 500, {
+                dbAsyncError: err
+              })
+            );
           });
       })
       .catch(validationError => {
-        const errorMessage = validationError.details.map(d => d.message);
-        res.status(422).send(errorMessage);
+        next(
+          Err("Validation Error", 422, {
+            validationErrorObject: validationError,
+            validationErrors: validationError.details.map(d => d.message)
+          })
+        );
       });
   },
   getProfileByUserId(req, res, next) {
@@ -62,21 +69,26 @@ module.exports = {
           .then(profile => {
             if (!profile) {
               return res.status(404).json({
-                profile: "No profile exists"
+                message: "No profile exists"
               });
             }
-            res.json(profile);
+            res.status(200).json(profile);
           })
           .catch(err => {
-            return res.status(500).json({
-              user_id: "Error fetching user profile",
-              error: err
-            });
+            next(
+              Err("Error while querying user profile by id", 500, {
+                dbAsyncError: err
+              })
+            );
           });
       })
       .catch(validationError => {
-        const errorMessage = validationError.details.map(d => d.message);
-        res.status(422).send(errorMessage);
+        next(
+          Err("Validation Error", 422, {
+            validationErrorObject: validationError,
+            validationErrors: validationError.details.map(d => d.message)
+          })
+        );
       });
   },
   getAllProfiles(req, res, next) {
@@ -86,16 +98,17 @@ module.exports = {
       .then(profiles => {
         if (!profiles) {
           return res.status(404).json({
-            profiles: "No profiles exists"
+            message: "No profiles exists"
           });
         }
-        res.json(profiles);
+        res.status(200).json(profiles);
       })
       .catch(err => {
-        return res.status(500).json({
-          profiles: "Error fetching profiles",
-          error: err
-        });
+        next(
+          Err("Error while querying profiles", 500, {
+            dbAsyncError: err
+          })
+        );
       });
   },
   create(req, res, next) {
@@ -109,10 +122,11 @@ module.exports = {
 
         Profile.findOne({ user: req.user.id }, (err, profile) => {
           if (err) {
-            return res.status(500).json({
-              profile: "Error querying profile",
-              error: err
-            });
+            next(
+              Err("Error while querying user profile", 500, {
+                dbCallbackError: err
+              })
+            );
           }
           if (profile) {
             //Update
@@ -122,15 +136,15 @@ module.exports = {
               { new: true },
               (err, profile) => {
                 if (err) {
-                  return res.status(500).json({
-                    profile: "Error while updating profile",
-                    error: err
-                  });
+                  next(
+                    Err("Error while updating user profile", 500, {
+                      dbCallbackError: err
+                    })
+                  );
                 }
-                res.json([
-                  profile,
-                  { message: "Profile successfully updates" }
-                ]);
+                res
+                  .status(200)
+                  .json([profile, { message: "Profile successfully updates" }]);
               }
             );
           } else {
@@ -138,19 +152,21 @@ module.exports = {
             //check if handle exists
             Profile.findOne({ handle: validProfile.handle }, (err, profile) => {
               if (err) {
-                return res.status(500).json({
-                  profile: "Error while creating profile",
-                  error: err
-                });
+                next(
+                  Err("Error while creating user profile", 500, {
+                    dbCallbackError: err
+                  })
+                );
               }
               if (profile) {
-                errors.handle = "The handle already exist";
-                res.status(400).json(errrs);
+                res.status(400).json({
+                  message: "The handle already exist"
+                });
               }
               new Profile(validProfile)
                 .save()
                 .then(profile => {
-                  res.json([
+                  res.status(200).json([
                     profile,
                     {
                       message: "Profile successfully saved"
@@ -158,35 +174,38 @@ module.exports = {
                   ]);
                 })
                 .catch(err => {
-                  return res.status(500).json([
-                    err,
-                    {
-                      profile: "Error while saving profile",
-                      error: err
-                    }
-                  ]);
+                  next(
+                    Err("Error while saving profile", 500, {
+                      dbAsyncError: err
+                    })
+                  );
                 });
             });
           }
         });
       })
       .catch(validationError => {
-        const errorMessage = validationError.details.map(d => d.message);
-        res.status(422).send(errorMessage);
+        next(
+          Err("Validation Error", 422, {
+            validationErrorObject: validationError,
+            validationErrors: validationError.details.map(d => d.message)
+          })
+        );
       });
   },
   createExperience(req, res, next) {
     Profile.findOne({ user: req.user.id }, (err, profile) => {
       if (err) {
-        return res.status(500).json({
-          user: "Error while fetching user profile",
-          error: err
-        });
+        next(
+          Err("Error while querying user profile", 500, {
+            dbCallbackError: err
+          })
+        );
       }
 
       if (!profile) {
         return res.status(404).json({
-          profile: "No profile exists"
+          message: "No profile exists"
         });
       }
 
@@ -197,7 +216,7 @@ module.exports = {
           profile
             .save()
             .then(profile => {
-              res.json([
+              res.status(200).json([
                 profile,
                 {
                   message: "Profile experience successfully saved"
@@ -205,33 +224,36 @@ module.exports = {
               ]);
             })
             .catch(err => {
-              return res.status(500).json([
-                err,
-                {
-                  experience: "Error while saving profile experience",
-                  error: err
-                }
-              ]);
+              next(
+                Err("Error while saving profile experience", 500, {
+                  dbAsyncError: err
+                })
+              );
             });
         })
         .catch(validationError => {
-          const errorMessage = validationError.details.map(d => d.message);
-          res.status(422).send(errorMessage);
+          next(
+            Err("Validation Error", 422, {
+              validationErrorObject: validationError,
+              validationErrors: validationError.details.map(d => d.message)
+            })
+          );
         });
     });
   },
   createEducation(req, res, next) {
     Profile.findOne({ user: req.user.id }, (err, profile) => {
       if (err) {
-        return res.status(500).json({
-          user: "Error while fetching user profile",
-          error: err
-        });
+        next(
+          Err("Error while querying user profile", 500, {
+            dbCallbackError: err
+          })
+        );
       }
 
       if (!profile) {
         return res.status(404).json({
-          profile: "No profile exists"
+          message: "No profile exists"
         });
       }
 
@@ -242,7 +264,7 @@ module.exports = {
           profile
             .save()
             .then(profile => {
-              res.json([
+              res.status(200).json([
                 profile,
                 {
                   message: "Profile education successfully saved"
@@ -250,75 +272,116 @@ module.exports = {
               ]);
             })
             .catch(err => {
-              return res.status(500).json([
-                err,
-                {
-                  education: "Error while saving profile education",
-                  error: err
-                }
-              ]);
+              next(
+                Err("Error while saving profile education", 500, {
+                  dbAsyncError: err
+                })
+              );
             });
         })
         .catch(validationError => {
-          const errorMessage = validationError.details.map(d => d.message);
-          res.status(422).send(errorMessage);
+          next(
+            Err("Validation Error", 422, {
+              validationErrorObject: validationError,
+              validationErrors: validationError.details.map(d => d.message)
+            })
+          );
         });
     });
   },
   updateExperience(req, res, next) {
-    Profile.findOne({ user: req.user.id }, (err, profile) => {
-      if (err) {
-        return res.status(500).json({
-          user: "Error while fetching user profile",
-          error: err
-        });
-      }
-
-      if (!profile) {
-        return res.status(404).json({
-          profile: "No profile exists"
-        });
-      }
-
-      const removeIndex = profile.experience
-        .map(item => item.id)
-        .indexOf(req.params.exp_id);
-      profile.experience.splice(removeIndex, 1);
-
-      profile
-        .save()
-        .then(profile => {
-          res.json([
-            profile,
-            {
-              message: "Profile experience successfully deleted"
+    experienceSchema
+      .validate(req.body, { abortEarly: false })
+      .then(validExperience => {
+        Profile.findOneAndUpdate(
+          { user: req.user.id, "experience._id": req.params.exp_id },
+          { "experience.$": validExperience },
+          { new: true },
+          (err, profile) => {
+            if (err) {
+              next(
+                Err("Error while querying user profile", 500, {
+                  dbCallbackError: err
+                })
+              );
             }
-          ]);
-        })
-        .catch(err => {
-          return res.status(500).json([
-            err,
-            {
-              experience: "Error while saving profile experience",
-              error: err
+
+            if (!profile) {
+              return res.status(404).json({
+                message: "No profile exists"
+              });
             }
-          ]);
-        });
-    });
+            res.status(200).json([
+              profile,
+              {
+                message: "Profile experience successfully updated"
+              }
+            ]);
+          }
+        );
+      })
+      .catch(validationError => {
+        next(
+          Err("Validation Error", 422, {
+            validationErrorObject: validationError,
+            validationErrors: validationError.details.map(d => d.message)
+          })
+        );
+      });
   },
-  updateEducation(req, res, next) {},
+  updateEducation(req, res, next) {
+    educationSchema
+      .validate(req.body, { abortEarly: false })
+      .then(validEducation => {
+        Profile.findOneAndUpdate(
+          { user: req.user.id, "education._id": req.params.exp_id },
+          { "education.$": validEducation },
+          { new: true },
+          (err, profile) => {
+            if (err) {
+              next(
+                Err("Error while querying user profile", 500, {
+                  dbCallbackError: err
+                })
+              );
+            }
+
+            if (!profile) {
+              return res.status(404).json({
+                message: "No profile exists"
+              });
+            }
+            res.status(200).json([
+              profile,
+              {
+                message: "Profile education successfully updated"
+              }
+            ]);
+          }
+        );
+      })
+      .catch(validationError => {
+        next(
+          Err("Validation Error", 422, {
+            validationErrorObject: validationError,
+            validationErrors: validationError.details.map(d => d.message)
+          })
+        );
+      });
+  },
   deleteExperience(req, res, next) {
     Profile.findOne({ user: req.user.id }, (err, profile) => {
       if (err) {
-        return res.status(500).json({
-          user: "Error while fetching user profile",
-          error: err
-        });
+        next(
+          Err("Error while querying user profile", 500, {
+            dbCallbackError: err
+          })
+        );
       }
 
       if (!profile) {
         return res.status(404).json({
-          profile: "No profile exists"
+          message: "No profile exists"
         });
       }
 
@@ -330,7 +393,7 @@ module.exports = {
       profile
         .save()
         .then(profile => {
-          res.json([
+          res.status(200).json([
             profile,
             {
               message: "Profile experience successfully deleted"
@@ -338,28 +401,27 @@ module.exports = {
           ]);
         })
         .catch(err => {
-          return res.status(500).json([
-            err,
-            {
-              experience: "Error while saving profile experience",
-              error: err
-            }
-          ]);
+          next(
+            Err("Error while deleting profile experience", 500, {
+              dbAsyncError: err
+            })
+          );
         });
     });
   },
   deleteEducation(req, res, next) {
     Profile.findOne({ user: req.user.id }, (err, profile) => {
       if (err) {
-        return res.status(500).json({
-          user: "Error while fetching user profile",
-          error: err
-        });
+        next(
+          Err("Error while querying user profile", 500, {
+            dbCallbackError: err
+          })
+        );
       }
 
       if (!profile) {
         return res.status(404).json({
-          profile: "No profile exists"
+          message: "No profile exists"
         });
       }
 
@@ -371,7 +433,7 @@ module.exports = {
       profile
         .save()
         .then(profile => {
-          res.json([
+          res.status(200).json([
             profile,
             {
               message: "Profile education successfully deleted"
@@ -379,13 +441,11 @@ module.exports = {
           ]);
         })
         .catch(err => {
-          return res.status(500).json([
-            err,
-            {
-              education: "Error while saving profile education",
-              error: err
-            }
-          ]);
+          next(
+            Err("Error while deleting profile education", 500, {
+              dbAsyncError: err
+            })
+          );
         });
     });
   }

@@ -5,6 +5,8 @@ const passport = require("passport");
 
 // Get logger
 const logger = require("./utils/logger");
+// Get error Handler
+const errorHandler = require("./utils/errorHandler");
 
 // Get configuration
 const config = require("./config");
@@ -18,8 +20,8 @@ if (process.env.NODE_ENV !== "test") {
     .once("open", () => {
       logger.info("Database connected!");
     })
-    .on("error", error => {
-      logger.error(error);
+    .on("error", err => {
+      logger.error(err);
     });
 }
 
@@ -43,33 +45,11 @@ fs.readdirSync(routeDir).forEach(function(file) {
   require(route)(app);
 });
 
-// Log routing errors
-app.use((error, req, res, next) => {
-  let errorResponse = {};
-  if (error) {
-    logger.error(error);
-    errorResponse.message = "Oops! Something went wrong!";
-    if (error.body) {
-      errorResponse.errorBody = error.body;
-    }
-    if (error.type) {
-      errorResponse.error = error.type;
-    }
-
-    const errorStatusCode = error.statusCode ? error.statusCode : 500;
-
-    res.status(errorStatusCode).send(errorResponse);
-  } else {
-    if (process.env.NODE_ENV !== "dev") {
-      logger.info(req);
-    }
-    next();
-  }
-});
+// Log errors
+app.use(errorHandler);
 
 // Set up debug
 const debug = require("debug");
-const name = "mernClientServerDemo";
-debug("booting %s", name);
+debug("booting %s", config.app.name);
 
 module.exports = app;

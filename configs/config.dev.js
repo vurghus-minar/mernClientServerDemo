@@ -1,5 +1,6 @@
 module.exports = dev = {
   app: {
+    name: "mernClientServerDemo",
     port: 3050
   },
   db: {
@@ -17,4 +18,11 @@ module.exports = dev = {
     log_file: "app-dev.log",
     err_file: "error-dev.log"
   }
+  // reporting_api: {
+  //   url: "http://localhost:7777/error",
+  //   options: {
+  //     method: "POST",
+  //     key: ""
+  //   }
+  // }
 };

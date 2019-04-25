@@ -39,6 +39,20 @@ module.exports = app => {
     profileController.createEducation
   );
 
+  // Update experience in profile
+  app.put(
+    "/profile/experience/:exp_id",
+    passport.authenticate("jwt", { session: false }),
+    profileController.updateExperience
+  );
+
+  // Update education in profile
+  app.put(
+    "/profile/education/:exp_id",
+    passport.authenticate("jwt", { session: false }),
+    profileController.updateEducation
+  );
+
   app.delete(
     "/profile/experience/:exp_id",
     passport.authenticate("jwt", { session: false }),

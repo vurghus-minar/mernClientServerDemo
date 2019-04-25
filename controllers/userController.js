@@ -1,5 +1,5 @@
 const User = require("../models/userModel");
-
+const Err = require("../utils/error");
 const userRequest = require("../requests/userRequest");
 const registerUserSchema = userRequest.registerUserSchema;
 const loginUserSchema = userRequest.loginUserSchema;
@@ -19,13 +19,15 @@ module.exports = {
       .then(validUser => {
         User.findOne({ email: validUser.email }, (err, user) => {
           if (err) {
-            return res.status(500).json({
-              email: "Error while querying email"
-            });
+            next(
+              Err("Error while querying email", 500, {
+                dbCallbackError: err
+              })
+            );
           }
           if (user) {
             return res.status(400).json({
-              email: "Email already exists"
+              message: "Email already exists"
             });
           } else {
             const avatar = gravatar.url(validUser.email, {
@@ -43,16 +45,26 @@ module.exports = {
 
             bcrypt.genSalt(10, (err, salt) => {
               bcrypt.hash(newUser.password, salt, (err, hash) => {
-                if (err) throw err;
+                if (err) {
+                  next(
+                    Err("Password Error!", 500, {
+                      bcryptCallbackError: err
+                    })
+                  );
+                }
                 newUser.password = hash;
                 console.log(newUser);
                 newUser
                   .save()
                   .then(user => {
-                    res.json(user);
+                    res.status(200).json(user);
                   })
                   .catch(err => {
-                    res.status(500).send(err);
+                    next(
+                      Err("Error creating new user", 500, {
+                        userRegistrationError: err
+                      })
+                    );
                   });
               });
             });
@@ -60,8 +72,12 @@ module.exports = {
         });
       })
       .catch(validationError => {
-        const errorMessage = validationError.details.map(d => d.message);
-        res.status(422).send(errorMessage);
+        next(
+          Err("Validation Error", 422, {
+            validationErrorObject: validationError,
+            validationErrors: validationError.details.map(d => d.message)
+          })
+        );
       });
   },
   login(req, res, next) {
@@ -71,13 +87,11 @@ module.exports = {
         //check if user exists
         User.findOne({ email: validUser.email }, (err, user) => {
           if (err) {
-            return res.status(500).json({
-              email: "Error while logging in"
-            });
+            next(Err("Error logging in!", 500, { dbCallbackError: err }));
           }
           if (!user) {
             return res.status(404).json({
-              email: "User not found"
+              message: "User not found"
             });
           }
           //check password match
@@ -99,7 +113,14 @@ module.exports = {
                     expiresIn: config.jwt.expiry
                   },
                   (err, token) => {
-                    res.json({
+                    if (err) {
+                      next(
+                        Err("Error getting user token", 500, {
+                          jwtCallbackError: err
+                        })
+                      );
+                    }
+                    res.status(200).json({
                       success: true,
                       token: "Bearer " + token
                     });
@@ -107,20 +128,26 @@ module.exports = {
                 );
               } else {
                 return res.status(401).json({
-                  password: "Incorrect password"
+                  message: "Incorrect password"
                 });
               }
             })
             .catch(err => {
-              return res.status(500).json({
-                password: "Error checking password"
-              });
+              next(
+                Err("Error verifying user password", 500, {
+                  userLoginError: err
+                })
+              );
             });
         });
       })
       .catch(validationError => {
-        const errorMessage = validationError.details.map(d => d.message);
-        res.status(422).send(errorMessage);
+        next(
+          Err("Validation Error", 422, {
+            validationErrorObject: validationError,
+            validationErrors: validationError.details.map(d => d.message)
+          })
+        );
       });
   }
 };
